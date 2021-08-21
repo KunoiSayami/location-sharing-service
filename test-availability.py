@@ -5,10 +5,11 @@ import json
 import logging
 import signal
 import subprocess
+import sys
 import time
 
 logger = logging.getLogger('test')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG if '--debug' in sys.argv else logging.INFO)
 
 INTERVAL = 300
 STEP_TIMEOUT = 60
@@ -21,15 +22,23 @@ def handler(*args) -> None:
     running = False
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(init=False)
 class Row:
+    timestamp: int
     status_code: int
     time_spend: int
     output: str
     request_type: str
 
+    def __init__(self, status_code: int, time_spend: int, output: str, request_type: str):
+        self.timestamp = int(time.time()) - time_spend
+        self.status_code = status_code
+        self.time_spend = time_spend
+        self.output = output
+        self.request_type = request_type
+
     def __str__(self) -> str:
-        return f'{self.status_code},{self.time_spend},' \
+        return f'{self.timestamp},{self.status_code},{self.time_spend},' \
                f'{base64.b64encode(self.output.encode()).decode()},{self.request_type}\n'
 
 
@@ -77,7 +86,7 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.DEBUG if '--debug' in sys.argv else logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(funcName)s - %(lineno)d - %(message)s')
     main()
 
